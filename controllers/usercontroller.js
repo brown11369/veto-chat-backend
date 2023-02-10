@@ -1,13 +1,15 @@
-const user = require("../model/userModel")
+const user = require("../model/userModel");
+const recentChat = require("../model/recentChatModel");
 
 module.exports.register = async (req, res, next) => {
     try {
         const { username, email, photoURL } = req.body
         const emailCheck = await user.findOne({ email })
         if (emailCheck) {
-            res.send({ status: true, emailCheck})
+            res.send({ status: true, emailCheck })
         } else {
             const userData = await user.create({ username, email, photoURL });
+            await recentChat.create({ userID: userData._id });
             res.send({ status: true, userData });
         }
     }
@@ -26,6 +28,17 @@ module.exports.getallusers = async (req, res, next) => {
             "_id"
         ]);
         return res.send(users);
+    }
+    catch (error) {
+        next(error)
+    }
+};
+
+module.exports.recentchatusers = async (req, res, next) => {
+    try {
+        const userID = req.params.id;
+        const user = await recentChat.find({ userID }).populate("users")
+        return res.send(user);
     }
     catch (error) {
         next(error)

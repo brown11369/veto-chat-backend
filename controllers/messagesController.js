@@ -1,8 +1,27 @@
 const messageModel = require("../model/messageModel");
+const recentChatModel = require("../model/recentChatModel");
 
 module.exports.addMessages = async (req, res, next) => {
     try {
         const { from, to, message } = req.body;
+
+        const recentChatfun = async (chatlist,from,to) => {
+            let checkUser = chatlist.users.find((item) => {
+                return item.toString() === to
+            })
+            if (checkUser == undefined) {
+                await recentChatModel.updateOne({ userID: from }, { $push: { users: to } })
+            }
+        }
+
+        const fromuserchatlist = await recentChatModel.findOne({ userID: from })
+        const touserchatlist = await recentChatModel.findOne({ userID: to })
+
+        recentChatfun(fromuserchatlist,from,to)
+        recentChatfun(touserchatlist,to,from)
+
+
+
         const data = await messageModel.create({
             message: { text: message },
             users: [from, to],
@@ -19,17 +38,14 @@ module.exports.addMessages = async (req, res, next) => {
 
 module.exports.getMessages = async (req, res, next) => {
     try {
-
         const { from, to } = req.body;
         const messages = await messageModel.find(
             {
                 users: {
                     $all: [from, to],
-
                 },
             }
         ).sort({ updatedAt: 1 });
-
         const projectMessages = messages.map((msg) => {
             return {
                 fromSelf: msg.sender.toString() === from,
@@ -37,9 +53,10 @@ module.exports.getMessages = async (req, res, next) => {
             };
         });
         return res.send(projectMessages)
-
-
     } catch (error) {
         next(error)
     }
 }
+
+
+
