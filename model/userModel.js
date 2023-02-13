@@ -4,8 +4,6 @@ const userSchema=mongoose.Schema({
     username:{
         type:String,
         required:true,
-        min:4,
-        max:15,
     },
     email:{
         type:String,
